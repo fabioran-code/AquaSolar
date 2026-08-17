@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "required": ["ph", "temperature", "humidity", "waterLevel", "pump", "status"],
+  "properties": {
+    "ph": {"type": "number"},
+    "temperature": {"type": "number"},
+    "humidity": {"type": "number"},
+    "waterLevel": {"type": "number", "minimum": 0, "maximum": 100},
+    "pump": {"type": "boolean"},
+    "status": {"type": "string"},
+    "battery": {"type": ["number", "null"]},
+    "timestamp": {"type": "integer"}
+  }
+}
