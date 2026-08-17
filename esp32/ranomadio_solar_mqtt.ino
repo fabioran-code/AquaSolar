@@ -1,6 +1,14 @@
 /* AquaSolar - ESP32 MQTT firmware
  * Real mode: ESP32 -> HiveMQ Cloud -> AquaSolar dashboard
- * Sensors: SEN0169-V2, DHT11, HC-SR04, LEDs, 12V pump.
+ * Sensors: SEN0169-V2, DHT11, HC-SR04, LEDs, 3-6V 120L/h micro submersible pump.
+ *
+ * Pump hardware:
+ * - Do NOT power the pump directly from an ESP32 GPIO.
+ * - Use a separate regulated 5V supply (within the pump's 3-6V range).
+ * - Control the pump with a logic-level N-MOSFET or a suitable transistor/relay.
+ * - Connect ESP32 GND and the pump supply GND together when using a MOSFET/transistor.
+ * - Add a flyback diode across the pump motor (cathode to +5V, anode to the MOSFET/drain side).
+ * - GPIO 23 remains the pump control signal.
  *
  * Libraries: DHT sensor library, Adafruit Unified Sensor, ArduinoJson, PubSubClient.
  * IMPORTANT: replace WIFI and MQTT credentials before flashing.
@@ -23,6 +31,10 @@
 #define LED_YELLOW 26
 #define LED_GREEN 27
 #define PUMP_PIN 23
+
+// 3-6V / 120L/h micro submersible pump.
+// GPIO 23 drives the MOSFET/transistor/relay input, NOT the pump motor directly.
+#define PUMP_SUPPLY_VOLTAGE 5.0f
 
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
@@ -79,7 +91,7 @@ void readSensors(){
 
 void publishTelemetry(){
   StaticJsonDocument<512> doc;
-  doc["device"]=DEVICE_ID;doc["ph"]=isnan(ph)?-1:ph;doc["temperature"]=isnan(temperature)?-1:temperature;doc["humidity"]=isnan(humidity)?-1:humidity;doc["distance"]=isnan(distanceCm)?-1:distanceCm;doc["waterLevel"]=isnan(waterLevel)?-1:waterLevel;doc["pump"]=pumpState;doc["status"]=waterStatus;doc["phMin"]=phMin;doc["phMax"]=phMax;doc["battery"]=nullptr;doc["timestamp"]=millis();
+  doc["device"]=DEVICE_ID;doc["ph"]=isnan(ph)?-1:ph;doc["temperature"]=isnan(temperature)?-1:temperature;doc["humidity"]=isnan(humidity)?-1:humidity;doc["distance"]=isnan(distanceCm)?-1:distanceCm;doc["waterLevel"]=isnan(waterLevel)?-1:waterLevel;doc["pump"]=pumpState;doc["status"]=waterStatus;doc["phMin"]=phMin;doc["phMax"]=phMax;doc["pumpVoltage"]=PUMP_SUPPLY_VOLTAGE;doc["battery"]=nullptr;doc["timestamp"]=millis();
   String payload;serializeJson(doc,payload);mqtt.publish(topic("telemetry").c_str(),payload.c_str(),false);mqtt.publish(topic("status").c_str(),waterStatus.c_str(),false);
 }
 
