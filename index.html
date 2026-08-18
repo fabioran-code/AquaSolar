@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#0b8f5a">
   <title>AquaSolar — Surveillance de l'eau</title><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script><script src="mqtt-client.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script><script src="mqtt/emqx-config.example.js"></script><script src="mqtt-client.js"></script>
 </head>
 <body>
   <aside class="sidebar"><div class="brand"><div class="brand-mark">💧</div><div><strong>AquaSolar</strong><span>Smart Water</span></div></div><nav>
@@ -27,10 +27,10 @@
   <section id="history" class="view"><div class="section-head"><div><span class="eyebrow">DONNÉES</span><h2>Historique des mesures</h2></div><button class="primary" id="exportBtn">Exporter CSV</button></div><div class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Date</th><th>pH</th><th>Temp.</th><th>Humidité</th><th>Niveau</th><th>État</th></tr></thead><tbody id="historyBody"></tbody></table></div></div></section>
   <section id="alerts" class="view"><div class="section-head"><div><span class="eyebrow">SÉCURITÉ</span><h2>Alertes & événements</h2></div><button class="secondary" id="clearAlerts">Effacer l'historique</button></div><div id="alertsList" class="alert-list"></div></section>
   <section id="system" class="view"><div class="section-head"><div><span class="eyebrow">CONFIGURATION</span><h2>Système AquaSolar</h2></div></div><div class="settings-grid">
-    <article class="panel setting"><h3>Connexion MQTT / ESP32</h3><p>Le mode réel utilise HiveMQ Cloud. L'ESP32 publie les mesures sur MQTT/TLS et le dashboard les reçoit via WebSocket sécurisé.</p><label>Adresse ESP32 (compatibilité locale) <input id="esp32Url" type="url" placeholder="http://192.168.4.1"></label><button class="primary" id="connectEsp32">Tester la connexion locale</button></article>
+    <article class="panel setting"><h3>Connexion MQTT / ESP32</h3><p>Le mode réel utilise EMQX Cloud. L'ESP32 publie les mesures sur MQTT/TLS et le dashboard les reçoit via WebSocket sécurisé.</p><label>Adresse ESP32 (compatibilité locale) <input id="esp32Url" type="url" placeholder="http://192.168.4.1"></label><button class="primary" id="connectEsp32">Tester la connexion locale</button></article>
     <article class="panel setting"><h3>Seuils pH</h3><label>Minimum <input id="phMin" type="number" step="0.1" value="6.5"></label><label>Maximum <input id="phMax" type="number" step="0.1" value="8.5"></label><button class="primary" id="saveSettings">Enregistrer</button></article>
     <article class="panel setting"><h3>Automatisation</h3><p>La décision de traitement reste locale dans l'ESP32. L'application supervise les mesures et l'état de la pompe.</p><div class="setting-row"><span>Mode automatique</span><button id="autoSetting" class="toggle on">AUTO <span></span></button></div><div class="setting-row"><span>Notifications</span><button id="notifSetting" class="toggle on">ON <span></span></button></div></article>
-    <article class="panel setting"><h3>Architecture MQTT</h3><ul><li>HiveMQ Cloud</li><li>MQTT/TLS : port 8883 (ESP32)</li><li>MQTT/WSS : port 8884/mqtt (Web)</li><li>Telemetry : aquasolar/device01/telemetry</li><li>Status : aquasolar/device01/status</li><li>Command : aquasolar/device01/command</li></ul></article>
-  </div><div class="demo-note"><b>Deux modes</b><span>SIMULATION fonctionne sans ESP32. MODE RÉEL MQTT reçoit les mesures de l'ESP32 via HiveMQ Cloud.</span></div></section>
+    <article class="panel setting"><h3>Architecture MQTT</h3><ul><li>EMQX Cloud</li><li>MQTT/TLS : port 8883 (ESP32)</li><li>MQTT/WSS : port 8084/mqtt (Web)</li><li>Telemetry : aquasolar/device01/telemetry</li><li>Status : aquasolar/device01/status</li><li>Command : aquasolar/device01/command</li></ul></article>
+  </div><div class="demo-note"><b>Deux modes</b><span>SIMULATION fonctionne sans ESP32. MODE RÉEL MQTT reçoit les mesures de l'ESP32 via EMQX Cloud.</span></div></section>
   <footer>AquaSolar · Smart Water Treatment & Monitoring · <span id="year"></span></footer></main><script src="app.js"></script>
 </body></html>
