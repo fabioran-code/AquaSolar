@@ -1,5 +1,5 @@
 /* AquaSolar - ESP32 MQTT firmware
- * Real mode: ESP32 -> HiveMQ Cloud -> AquaSolar dashboard
+ * Real mode: ESP32 -> EMQX Cloud -> AquaSolar dashboard
  * Sensors: SEN0169-V2, DHT11, HC-SR04, LEDs, 3-6V 120L/h micro submersible pump.
  *
  * Pump hardware:
@@ -11,9 +11,9 @@
  * - GPIO 23 remains the pump control signal.
  *
  * Libraries: DHT sensor library, Adafruit Unified Sensor, ArduinoJson, PubSubClient.
- * IMPORTANT: replace WIFI and MQTT credentials before flashing.
+ * IMPORTANT: replace WIFI and EMQX credentials before flashing.
  * For this demo the TLS client uses setInsecure(). For production, install
- * and validate the HiveMQ CA certificate instead.
+ * and validate the EMQX CA certificate instead.
  */
 #include <Arduino.h>
 #include <WiFi.h>
@@ -32,16 +32,15 @@
 #define LED_GREEN 27
 #define PUMP_PIN 23
 
-// 3-6V / 120L/h micro submersible pump.
-// GPIO 23 drives the MOSFET/transistor/relay input, NOT the pump motor directly.
 #define PUMP_SUPPLY_VOLTAGE 5.0f
 
 const char* WIFI_SSID = "YOUR_WIFI_SSID";
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char* MQTT_HOST = "dd3778f4cb2143faba675c1b1bc30546.s1.eu.hivemq.cloud";
+// EMQX Cloud deployment endpoint, without https:// or mqtt://
+const char* MQTT_HOST = "YOUR_EMQX_ENDPOINT";
 const uint16_t MQTT_PORT = 8883;
 const char* MQTT_USER = "AquaSolar";
-const char* MQTT_PASSWORD = "YOUR_HIVEMQ_PASSWORD";
+const char* MQTT_PASSWORD = "YOUR_EMQX_PASSWORD";
 const char* DEVICE_ID = "aquasolar-device01";
 
 const unsigned long SENSOR_INTERVAL = 3000;
@@ -106,7 +105,7 @@ void mqttCallback(char* t,byte* payload,unsigned int length){if(String(t)==topic
 
 void connectWiFi(){WiFi.mode(WIFI_STA);WiFi.begin(WIFI_SSID,WIFI_PASSWORD);Serial.print("Wi-Fi");unsigned long start=millis();while(WiFi.status()!=WL_CONNECTED&&millis()-start<20000){delay(500);Serial.print('.');}Serial.println();if(WiFi.status()==WL_CONNECTED){Serial.print("IP: ");Serial.println(WiFi.localIP());}else Serial.println("Wi-Fi non connecté");}
 
-void connectMQTT(){if(WiFi.status()!=WL_CONNECTED)return;if(mqtt.connected())return;String cid=String(DEVICE_ID)+"-"+String((uint32_t)ESP.getEfuseMac(),HEX);Serial.print("MQTT...");if(mqtt.connect(cid.c_str(),MQTT_USER,MQTT_PASSWORD)){Serial.println("OK");mqtt.subscribe(topic("command").c_str(),0);mqtt.publish(topic("status").c_str(),"ONLINE",true);publishTelemetry();}else{Serial.printf("échec rc=%d\n",mqtt.state());}}
+void connectMQTT(){if(WiFi.status()!=WL_CONNECTED)return;if(mqtt.connected())return;String cid=String(DEVICE_ID)+"-"+String((uint32_t)ESP.getEfuseMac(),HEX);Serial.print("MQTT/EMQX...");if(mqtt.connect(cid.c_str(),MQTT_USER,MQTT_PASSWORD)){Serial.println("OK");mqtt.subscribe(topic("command").c_str(),0);mqtt.publish(topic("status").c_str(),"ONLINE",true);publishTelemetry();}else{Serial.printf("échec rc=%d\n",mqtt.state());}}
 
 void setup(){
   Serial.begin(115200);pinMode(PH_PIN,INPUT);pinMode(TRIG_PIN,OUTPUT);pinMode(ECHO_PIN,INPUT);pinMode(LED_RED,OUTPUT);pinMode(LED_YELLOW,OUTPUT);pinMode(LED_GREEN,OUTPUT);pinMode(PUMP_PIN,OUTPUT);digitalWrite(PUMP_PIN,LOW);setLeds(false,false,false);dht.begin();
