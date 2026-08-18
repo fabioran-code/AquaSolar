@@ -1,8 +1,7 @@
 // AquaSolar EMQX Cloud configuration
 // DO NOT put the real password in this file.
-// Replace YOUR_EMQX_ENDPOINT with the endpoint shown in EMQX Cloud.
 window.AquaSolarMQTTConfig = {
-  host: "YOUR_EMQX_ENDPOINT",
+  host: "k02a8067.ala.eu-central-1.emqxsl.com",
   port: 8084,
   path: "/mqtt",
   protocol: "wss",
