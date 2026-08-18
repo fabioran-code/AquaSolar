@@ -1,10 +1,19 @@
 /* AquaSolar MQTT bridge
- * Browser -> HiveMQ Cloud over secure WebSockets.
+ * Browser -> EMQX Cloud over secure WebSockets.
  * The MQTT password is requested at runtime and stored only in localStorage.
- * For production, use a dedicated low-privilege HiveMQ credential/ACL.
+ * Configure the EMQX endpoint in mqtt/emqx-config.example.js or override it
+ * with window.AquaSolarMQTTConfig before this script loads.
  */
 (function(){
-  const CFG={host:'dd3778f4cb2143faba675c1b1bc30546.s1.eu.hivemq.cloud',port:8884,path:'/mqtt',username:'AquaSolar',deviceId:'aquasolar-device01'};
+  const external=window.AquaSolarMQTTConfig||{};
+  const CFG={
+    host:external.host||'YOUR_EMQX_ENDPOINT',
+    port:Number(external.port||8084),
+    path:external.path||'/mqtt',
+    protocol:external.protocol||'wss',
+    username:external.username||'AquaSolar',
+    deviceId:external.deviceId||'aquasolar-device01'
+  };
   const TELEMETRY=`aquasolar/${CFG.deviceId}/telemetry`;
   const STATUS=`aquasolar/${CFG.deviceId}/status`;
   const COMMAND=`aquasolar/${CFG.deviceId}/command`;
@@ -22,25 +31,27 @@
   }
   function setModeText(){
     const el=document.getElementById('modeLabel'); if(el)el.textContent=AquaSolarMQTT.mode==='mqtt'?(connected?'RÉEL MQTT':'RÉEL — CONNEXION...'):'SIMULATION';
-    const t=document.getElementById('connectionText'); if(t&&AquaSolarMQTT.mode==='mqtt')t.textContent=connected?'MQTT · HiveMQ Cloud':'MQTT hors ligne';
+    const t=document.getElementById('connectionText'); if(t&&AquaSolarMQTT.mode==='mqtt')t.textContent=connected?'MQTT · EMQX Cloud':'MQTT hors ligne';
   }
   function connect(){
     AquaSolarMQTT.mode='mqtt'; localStorage.setItem('aquasolarMode','mqtt'); setModeText();
+    if(CFG.host==='YOUR_EMQX_ENDPOINT'){alert('Configurez l\'endpoint EMQX Cloud dans mqtt/emqx-config.example.js.');return;}
     if(typeof mqtt==='undefined'){alert('Bibliothèque MQTT indisponible. Vérifiez la connexion Internet.');return;}
-    const password=localStorage.getItem('aquasolarMqttPassword')||prompt('Mot de passe MQTT HiveMQ pour AquaSolar :');
+    const password=localStorage.getItem('aquasolarMqttPassword')||prompt('Mot de passe MQTT EMQX pour AquaSolar :');
     if(!password)return;
     localStorage.setItem('aquasolarMqttPassword',password);
     if(client){try{client.end(true)}catch(e){}}
-    client=mqtt.connect(`wss://${CFG.host}:${CFG.port}${CFG.path}`,{username:CFG.username,password,clean:true,reconnectPeriod:3000,connectTimeout:8000,clientId:`AquaSolarWeb-${Math.random().toString(16).slice(2)}`});
-    client.on('connect',()=>{connected=true;client.subscribe([TELEMETRY,STATUS],{qos:0});setModeText();document.getElementById('aquasolarMqttConnect').textContent='MQTT connecté';});
-    client.on('message',(topic,payload)=>{try{const d=JSON.parse(payload.toString());if(topic===TELEMETRY){lastTelemetry={...d,timestamp:d.timestamp||Date.now()};} }catch(e){console.warn('MQTT payload invalide',e)}});
-    client.on('close',()=>{connected=false;setModeText();}); client.on('error',e=>console.warn('MQTT',e));
+    const url=`${CFG.protocol}://${CFG.host}:${CFG.port}${CFG.path}`;
+    client=mqtt.connect(url,{username:CFG.username,password,clean:true,reconnectPeriod:3000,connectTimeout:8000,clientId:`AquaSolarWeb-${Math.random().toString(16).slice(2)}`});
+    client.on('connect',()=>{connected=true;client.subscribe([TELEMETRY,STATUS],{qos:0});setModeText();const b=document.getElementById('aquasolarMqttConnect');if(b)b.textContent='MQTT connecté';});
+    client.on('message',(topic,payload)=>{try{const d=JSON.parse(payload.toString());if(topic===TELEMETRY){lastTelemetry={...d,timestamp:d.timestamp||Date.now()};}}catch(e){console.warn('MQTT payload invalide',e);}});
+    client.on('close',()=>{connected=false;setModeText();});
+    client.on('error',e=>{connected=false;setModeText();console.warn('MQTT/EMQX',e);});
   }
   function disconnect(){connected=false;if(client){try{client.end(true)}catch(e){}}client=null;setModeText();}
   function publishCommand(payload){if(!client||!connected)return Promise.reject(new Error('MQTT non connecté'));client.publish(COMMAND,JSON.stringify(payload),{qos:0});return Promise.resolve();}
   window.AquaSolarMQTT.publishCommand=publishCommand;
 
-  // Intercept the existing app's /api/status and /api/config calls without breaking its UI.
   const nativeFetch=window.fetch.bind(window);
   window.fetch=function(input,init){
     const url=typeof input==='string'?input:(input&&input.url)||'';
